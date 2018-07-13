@@ -1,10 +1,10 @@
 # CURL-TO-PY
-Transfer curl to python
+## Transfer curl to python
 
-# This program could transfer almost all curl command to python code.
+### This program could transfer almost all curl command to python code.
 Currently, you can only input your curl command in the console, later I will make it a website.
 
-### Samples of curl to python:
+#### Samples of curl to python:
 
 > curl https://api.example.com/surprise -u banana:coconuts -d "sample data"
 
