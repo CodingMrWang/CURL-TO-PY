@@ -78,4 +78,4 @@ url = 'https://api.anjuke.com/mobile/v5/sale/property/view?app=i-ajk'
 requests.get(url = url, headers = headers, params = payload)
 ```
 
-This program is inspired by  https://github.com/zhexuany/curl-to-py, but this program could not transfer some of my curl commands, so I decide to write a more functional curl to py program with python.
+This program is inspired by  https://github.com/zhexuany/curl-to-py, but his program could not transfer some of my curl commands, so I decide to write a more functional curl to py program with python, that is why I write this program.
