@@ -1,7 +1,7 @@
-class curl_to_py(object):
+class CurlToPy(object):
     p = 0
     result = {'temp': []}
-    boolOptions = ['#', 'progress-bar', '-', 'next', '0', 'http1.0', 'http1.1', 'http2',
+    bool_options = ['#', 'progress-bar', '-', 'next', '0', 'http1.0', 'http1.1', 'http2',
         'no-npn', 'no-alpn', '1', 'tlsv1', '2', 'sslv2', '3', 'sslv3', '4', 'ipv4', '6', 'ipv6',
         'a', 'append', 'anyauth', 'B', 'use-ascii', 'basic', 'compressed', 'create-dirs',
         'crlf', 'digest', 'disable-eprt', 'disable-epsv', 'environment', 'cert-status',
@@ -19,66 +19,66 @@ class curl_to_py(object):
         'h', 'help', 'M', 'manual', 'V', 'version'
     ]
 
-    def parseCommand(self):
+    def parse_command(self):
         if (len(self.curl) > 2 and (self.curl[0] == '$' or self.curl[0] == '#') and self.whitespace(self.curl[1])):
             self.curl = self.curl[1:].lstrip()
         while self.p < len(self.curl):
-            self.skipWhiteSpace()
+            self.skip_white_space()
             if self.curl[self.p] == '-':
-                self.flagSet()
+                self.flag_set()
             else:
                 self.unflagged()
             self.p+= 1
         return self.result
 
     def unflagged(self):
-        self.result['temp'].append(self.nextString())
+        self.result['temp'].append(self.next_string())
 
-    def skipWhiteSpace(self):
+    def skip_white_space(self):
         while self.whitespace(self.curl[self.p]) and self.p < len(self.curl):
            self.p+= 1
 
-    def flagSet(self):
-        if self.isLongFlag():
-            return self.longFlag()
-        return self.shortFlag()
+    def flag_set(self):
+        if self.is_long_flag():
+            return self.long_flag()
+        return self.short_flag()
 
-    def isLongFlag(self):
+    def is_long_flag(self):
         return self.p + 1 < len(self.curl) and self.curl[self.p + 1] == '-'
 
-    def longFlag(self):
+    def long_flag(self):
         self.p+= 2
-        flagName = self.nextString("=")
-        if self.boolFlag(flagName):
+        flagName = self.next_string("=")
+        if self.bool_flag(flagName):
             self.result[flagName] = True
         else:
             if flagName not in self.result:
                 self.result[flagName] = []
             if type(self.result[flagName]) == list:
                 self.p += 1
-                self.result[flagName].append(self.nextString())
+                self.result[flagName].append(self.next_string())
 
-    def shortFlag(self):
+    def short_flag(self):
         self.p += 1
         while self.p< len(self.curl) and not self.whitespace(self.curl[self.p]):
             flagName = self.curl[self.p]
             if flagName not in self.result:
                 self.result[flagName] = []
                 self.p+= 1
-            if self.boolFlag(flagName):
+            if self.bool_flag(flagName):
                 self.result[flagName] = True
             elif type(self.result[flagName] == list):
                 self.p += 1
-                self.result[flagName].append(self.nextString())
+                self.result[flagName].append(self.next_string())
 
-    def boolFlag(self, flag):
-        return flag in self.boolOptions
+    def bool_flag(self, flag):
+        return flag in self.bool_options
 
     def whitespace(self, ch):
         return ch == " " or ch == "\t" or ch == "\n" or ch == "\r"
 
-    def nextString(self, endChar=None):
-        self.skipWhiteSpace()
+    def next_string(self, endChar=None):
+        self.skip_white_space()
         s = ""
         quoted = False
         quoteCh = ""
@@ -110,7 +110,7 @@ class curl_to_py(object):
             self.p += 1
         return s
 
-    def extractRelevantPieces(self, cmd):
+    def extract_relevant_pieces(self, cmd):
         relevant = {
             'url': "",
             'method': "",
@@ -121,7 +121,7 @@ class curl_to_py(object):
             relevant['url'] = cmd['url'][0]
         elif len(cmd['temp']) > 1:
             relevant['url'] = cmd['temp'][1]
-        relevant['headers'] = self.getHeadersDict(cmd)
+        relevant['headers'] = self.get_headers_dict(cmd)
         if 'I' in cmd or 'head' in cmd:
             relevant['method'] = 'HEAD'
 
@@ -135,13 +135,13 @@ class curl_to_py(object):
             elif ':method' in cmd['H']:
                 relevant['method'] = cmd['H'][':method'].upper()
 
-        relevant['data'] = self.getDataDict(cmd, relevant)
-        relevant['basicAuth'] = self.getBasicAuth(cmd)
+        relevant['data'] = self.get_data_dict(cmd, relevant)
+        relevant['basicAuth'] = self.get_basic_auth(cmd)
         if not relevant['method']:
             relevant['method'] = "GET"
         return relevant
 
-    def getBasicAuth(self, cmd):
+    def get_basic_auth(self, cmd):
         basicAuthString = ""
         if 'user' in cmd and len(cmd['user']) > 0:
             basicAuthString = cmd['user'][len(cmd['user']) - 1]
@@ -161,23 +161,23 @@ class curl_to_py(object):
         else:
             return None
 
-    def getDataDict(self, cmd, relevant):
+    def get_data_dict(self, cmd, relevant):
         data = {}
         dataAscii = []
         dataFiles = []
         data['ascii'] = ""
         data['files'] = ""
         if 'd' in cmd:
-            self.loadData(relevant, cmd['d'], dataAscii, dataFiles)
+            self.load_data(relevant, cmd['d'], dataAscii, dataFiles)
         if 'data' in cmd:
-            self.loadData(relevant, cmd['data'], dataAscii, dataFiles)
+            self.load_data(relevant, cmd['data'], dataAscii, dataFiles)
         if len(dataAscii) > 0:
             data['ascii'] = '&'.join(dataAscii)
         if len(dataFiles) > 0:
             data['files'] = '&'.join(dataFiles)
         return data
 
-    def loadData(self, relevant, d, dataAscii, dataFiles):
+    def load_data(self, relevant, d, dataAscii, dataFiles):
         if not 'method' in relevant:
             relevant['method'] = "POST"
         if 'Content-Type' in relevant['headers']:
@@ -191,7 +191,7 @@ class curl_to_py(object):
                 dataAscii.append(data)
 
 
-    def getHeadersDict(self, cmd):
+    def get_headers_dict(self, cmd):
         result = {}
         if 'H' in cmd:
             for header in cmd['H']:
@@ -215,7 +215,7 @@ class curl_to_py(object):
         return result
 
 
-    def renderSimple(self, method, url):
+    def render_simple(self, method, url):
         if method == "GET":
             return "requests.get('%s')\n" % url
         elif method == "POST":
@@ -224,17 +224,17 @@ class curl_to_py(object):
             return "requests.head('%s')\n" % url
         else:
             return 'not support yet'
-    def renderComplex(self ,req):
+    def render_complex(self ,req):
         py = "import requests\n"
-        headers = self.getHeadersDict(req)
-        data = self.getDataStr(req['data'])
+        headers = self.get_headers_dict(req)
+        data = self.get_data_str(req['data'])
         headStr = "{\n"
         for key,values in headers.items():
             headStr += "\t'%s' : '%s',\n" % (key, values)
         py += "\nheaders = " + headStr + "}\n"
         req['fullurl'] = req['url']
         py += "\nfullurl = '%s'\n"%req['fullurl']
-        par = self.getParmDict(req)
+        par = self.get_parm_dict(req)
         if par is not None:
             ParmStr = "{\n"
             for key, values in par.items():
@@ -255,7 +255,7 @@ class curl_to_py(object):
         py += ")"
         return py
 
-    def getParmDict(self, req):
+    def get_parm_dict(self, req):
         parms = req['url'].split('&')
         ans = {}
         if len(parms) > 1:
@@ -272,16 +272,16 @@ class curl_to_py(object):
         if not self.curl.lstrip():
             print('empty input')
             return
-        cmd = self.parseCommand()
+        cmd = self.parse_command()
         if not cmd['temp'][0] == 'curl':
             print('not a curl command')
-        req = self.extractRelevantPieces(cmd)
+        req = self.extract_relevant_pieces(cmd)
 
         if len(req['headers']) == 0 and not req['data']['ascii'] and not req['data']['files'] and not 'basicauth' not in req:
-            return self.renderSimple(req['method'], req['url'])
-        return self.renderComplex(req)
+            return self.render_simple(req['method'], req['url'])
+        return self.render_complex(req)
 
-    def getDataStr(self, data):
+    def get_data_str(self, data):
         dataStr = ""
         dataFiles = data['files']
         if not dataFiles == "":
@@ -303,5 +303,5 @@ class curl_to_py(object):
 
 
 if __name__ == '__main__':
-    cp = curl_to_py()
+    cp = CurlToPy()
     print(cp.run())
